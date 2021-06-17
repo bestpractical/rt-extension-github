@@ -1,0 +1,98 @@
+% $r->content_type('application/json; charset=utf-8');
+<% JSON($status) |n %>
+% $m->abort();
+<%args>
+$id => undef
+</%args>
+<%init>
+my $status = {};
+my $Ticket;
+
+if ( $id ) {
+    $Ticket = RT::Ticket->new($session{'CurrentUser'});;
+    my ( $ret, $msg ) = $Ticket->Load($id);
+    unless ( $ret ) {
+        RT->Logger->error("Unable to load ticket with id $id: $msg");
+        $status = {
+            success => 0,
+            error => $msg,
+        };
+    }
+}
+else {
+    $status = {
+        success => 0,
+        error => "No ticket id provided"
+    };
+}
+
+if ( $Ticket and $Ticket->Id ) {
+    if (!grep { $Ticket->QueueObj->Name eq $_ } @{ RT->Config->Get('GitHubActions')->{Queues} || [] }) {
+        $status = {
+            success => 0,
+            error => "Ticket is not in a queue configured for GitHub Actions",
+        };
+    }
+    else {
+        my ( $proj, $branch ) = RT::Extension::GitHub::GetBranchDetails( $Ticket );
+
+        my $result = RT::Extension::GitHub::GetStatus($proj, $branch, $session{'CurrentUser'});
+
+        $status = {
+            success => 0,
+        };
+
+        if ( $result ) {
+            if ( $result->{'total_count'} == 0 ) {
+                $status->{'error'} = 'No tests found';
+            }
+            else {
+                my $message;
+                my $title_url;
+
+                # Github can return results for multiple runs. Set a starting
+                # date at the epoch and try to find the most recent run.
+                my $created_date = RT::Date->new( RT->SystemUser );
+                $created_date->Unix(1);
+
+                foreach my $workflow ( @{ $result->{'workflow_runs'} } ){
+                    my $created_in = $workflow->{'created_at'};
+
+                    # Remove the trailing 'Z' we get back from Travis CI;
+                    # RT::Date will not parse the date if it is present.  We also
+                    # need to change the 'T' to a space or it will fail to parse.
+                    $created_in =~ s/Z$//;
+                    $created_in =~ s/T/ /;
+
+                    my $created_obj = RT::Date->new( RT->SystemUser );
+                    $created_obj->Set( Value => $created_in, Format => 'ISO' );
+
+                    # Is this workflow more recent?
+                    if ( $created_date->Diff($created_obj) < 0 ) {
+                        $created_date = $created_obj;
+
+                        $message = $workflow->{'conclusion'};
+                        $title_url = $workflow->{'html_url'};
+                    }
+                }
+
+                # This success is the call to github succeeded
+                # $message has the job result, "success" or "failure"
+                $status->{success} = 1;
+                $status->{result}->{last_build}->{pretty_build_state} = $message;
+                $status->{result}->{title_url} = $title_url;
+
+                if ( $message eq 'success' ) {
+                    $status->{result}->{last_build}->{state} = 'success';
+                }
+                else {
+                    $status->{result}->{last_build}->{state} = 'failed';
+                }
+            }
+        }
+        else {
+            $status->{'error'} = 'Unable to fetch test results';
+        }
+    }
+}
+</%init>

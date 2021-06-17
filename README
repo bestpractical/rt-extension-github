@@ -1,0 +1,53 @@
+NAME
+    RT-Extension-GitHub - Tools to integrate RT with GitHub
+
+DESCRIPTION
+    This extension provides tools and features that are useful if you use
+    GitHub for version control and possibly GitHub Actions for CI and you
+    track your work in RT.
+
+RT VERSION
+    Works with RT 5.0
+
+INSTALLATION
+    perl Makefile.PL
+    make
+    make install
+        May need root permissions
+
+    Edit your /opt/rt4/etc/RT_SiteConfig.pm
+        Add this line:
+
+            Plugin('RT::Extension::GitHub');
+
+    Clear your mason cache
+            rm -rf /opt/rt4/var/mason_data/obj
+
+    Restart your webserver
+
+CONFIGURATION
+  Queues for Github Actions
+    Set the following to define which queues should show the Github Actions
+    portlet with test results for a branch:
+
+        Set( $GitHubActions, {
+            Queues => [ 'General' ] }
+        );
+
+    The extension expects the subject of tickets to be the name of the
+    branch to try to fetch test results for.
+
+AUTHOR
+    Best Practical Solutions, LLC <modules@bestpractical.com>
+
+    All bugs should be reported via email to
+        bug-RT-Extension-GitHub@rt.cpan.org
+    or via the web at
+        http://rt.cpan.org/Public/Dist/Display.html?Name=RT-Extension-GitHub
+LICENSE AND COPYRIGHT
+    This software is Copyright (c) 2021 by Best Practical Solutions, LLC
+
+    This is free software, licensed under:
+
+      The GNU General Public License, Version 2, June 1991
+
