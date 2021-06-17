@@ -22,7 +22,7 @@ jQuery(function(){
         var _ = this;
         var ticket_id = jQuery(this).attr("data-github-actions-ticketid");
         jQuery.getJSON(
-            RT.Config.WebPath + "/Helpers/Github/ActionsStatus?id=" + ticket_id,
+            RT.Config.WebPath + "/Helpers/GitHub/ActionsStatus?id=" + ticket_id,
             function(data) {
                 if (data == null) return;
                 if (!data.success) {
