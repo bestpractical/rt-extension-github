@@ -1,4 +1,9 @@
-jQuery(function(){
+htmx.onLoad(function(elt){
+    // Restrict execution to the github actions widget so it does not run
+    // on every htmx request
+    if ( ! jQuery(elt).hasClass("github-actions-status") ) {
+        return;
+    }
     var escapeHTML = function(string) {
         // Lifted from mustache.js
         var entityMap = {
@@ -43,7 +48,7 @@ jQuery(function(){
         );
     };
 
-    jQuery(".ticket-summary .github-actions").each(function(){
+    jQuery(".titlebox-content .github-actions").each(function(){
         github_actions_fetch.call(this, template);
     });
 
