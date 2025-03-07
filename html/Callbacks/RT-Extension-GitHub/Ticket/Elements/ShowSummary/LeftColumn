@@ -1,8 +1,0 @@
-<%args>
-$Ticket
-</%args>
-<%init>
-return unless grep { $Ticket->QueueObj->Name eq $_ }
-    @{ RT->Config->Get('GitHubActions')->{Queues} || [] };
-</%init>
-<& /Elements/GithubActionsStatus, Ticket => $Ticket &>
